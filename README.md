@@ -1,87 +1,103 @@
 # Odoo Service Manager Scripts
 
-This repository contains two scripts to manage Odoo services running on Windows or Linux. The scripts help you:
+This repository contains two management scripts for Odoo on Windows and Linux. Both scripts provide the same functionality and now include
+improved service detection, safer process handling, PostgreSQL coordination, and a small interactive menu.
 
-1. Identify and stop the service running on port **8069**.
-2. Disable its auto-run (auto-start on boot).
-3. Restart Odoo manually when needed.
+Key capabilities:
+- Detect and gracefully stop Odoo processes using port **8069**
+- Stop either only Odoo or both Odoo and PostgreSQL
+- Start PostgreSQL first (if needed), then start Odoo
+- Check current Odoo status (processes and services)
+- Auto-elevate (PowerShell script) or restart with sudo (shell script)
+- Open PowerShell 7+ download page (PowerShell script)
 
 ---
 
-## 🧩 Files
+## Files
 
-### **1. `odoo_service_manager.ps1` (PowerShell)**
+1. `odoo-control.ps1` — PowerShell script (Windows)
+2. `odoo-control.sh` — Shell script (Linux/macOS)
 
-This script allows you to:
+Both scripts are interactive and present the following menu options:
 
-* **Option 1:** Stop Odoo service and disable auto-start.
-* **Option 2:** Start Odoo service manually.
+- Stop Odoo only (leave PostgreSQL running)
+- Stop Odoo + PostgreSQL (stop database too)
+- Start Odoo service (will start PostgreSQL first if required)
+- Check Odoo status (shows processes and registered services)
+- (PowerShell only) Open PowerShell 7+ download page
+- Exit
 
-#### **Usage (Windows)**
+---
 
-1. Right-click PowerShell → Run as Administrator.
-2. Navigate to the folder containing the script:
+## Usage (Windows — PowerShell)
 
-   ```powershell
-   cd "D:\Odoo Scripts"
-   ```
+1. Run PowerShell as Administrator (the script will auto-elevate when needed).
+2. Open the folder that contains `odoo-control.ps1`.
 3. Run the script:
 
    ```powershell
-   .\odoo_service_manager.ps1
+   .\odoo-control.ps1
    ```
-4. Choose an option:
 
-   * `1` → Stop Odoo service and disable auto-run.
-   * `2` → Start Odoo service manually.
+4. Choose one of the numbered menu options. Notes:
+
+   - Option 1 stops Odoo only (recommended for normal use).
+   - Option 2 stops both Odoo and PostgreSQL; use this only when you intentionally want to stop the database.
+   - Option 3 will ensure PostgreSQL is running, then start Odoo.
+   - Option 5 opens the Microsoft docs page for installing PowerShell 7+.
 
 ---
 
-### **2. `odoo_service_manager.sh` (Linux)**
+## Usage (Linux/macOS — Shell)
 
-This script performs the same operations on Linux systems.
-
-#### **Usage (Linux)**
-
-1. Open your terminal.
-2. Give execution permission:
+1. Make the script executable (if not already):
 
    ```bash
-   chmod +x odoo_service_manager.sh
+   chmod +x odoo-control.sh
    ```
-3. Run the script:
+
+2. Run the script with root privileges. The script will re-run itself with sudo if needed:
 
    ```bash
-   ./odoo_service_manager.sh
+   ./odoo-control.sh
    ```
-4. Choose an option:
 
-   * `1` → Stop Odoo process and disable auto-start.
-   * `2` → Start Odoo service manually. 
+3. Choose a menu option. Notes:
 
----
-
-## ⚙️ Notes
-
-* Make sure to run the scripts as **administrator/root**.
-* Default Odoo port: **8069**
-* You can customize the Odoo executable path in the script.
+   - Option 1 stops Odoo only (recommended).
+   - Option 2 stops both Odoo and PostgreSQL.
+   - Option 3 starts PostgreSQL (if needed) and then Odoo.
 
 ---
 
-## 💡 Example
+## Important Notes & Safety
 
-**To check what’s using port 8069 manually:**
+- Stopping PostgreSQL will make Odoo unavailable until the database is started again. Only stop PostgreSQL if you understand the consequences.
+- Both scripts try to stop only relevant Odoo processes and will avoid killing system processes (e.g. "System Idle" or PID 0/4).
+- Modify hardcoded paths in the scripts to match your installation if your Odoo or Python are installed in non-standard locations.
 
-* **Windows:**
+---
 
-  ```powershell
-  netstat -ano | findstr :8069
-  ```
-* **Linux:**
+## Troubleshooting / Useful Commands
 
-  ```bash
-  sudo lsof -i :8069
-  ```
+**Windows:**
 
-This helps confirm which process (PID) is blocking Odoo before running the script.
+```powershell
+# Show which process owns port 8069
+netstat -ano | findstr :8069
+# Get process info by PID
+Get-Process -Id <PID> | Select-Object Id, ProcessName, Path
+```
+
+**Linux/macOS:**
+
+```bash
+# Show which process owns port 8069
+sudo lsof -i :8069
+# Check a process command line
+ps -p <PID> -o args=
+```
+
+---
+
+If you'd like to add automatic Windows service creation for Odoo or support additional distributions for the shell script, open an issue or submit a pull request.
